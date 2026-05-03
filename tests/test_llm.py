@@ -447,6 +447,34 @@ def test_extra_openai_models_async(user_path):
         llm.get_async_model("completion-babbage")
 
 
+def test_extra_openai_models_env_var_interpolation(user_path, monkeypatch):
+    monkeypatch.setenv("MY_API_BASE", "https://api.together.xyz/v1")
+    monkeypatch.setenv("MY_API_KEY_NAME", "together")
+    config_path = user_path / "extra-openai-models.yaml"
+    config_path.write_text(
+        """
+- model_id: together-llama
+  model_name: meta-llama/Llama-3.3-70B-Instruct-Turbo
+  api_base: "${MY_API_BASE}"
+  api_key_name: "${MY_API_KEY_NAME}"
+  aliases: ["llama3"]
+""",
+        "utf-8",
+    )
+    # Reload to pick up the new config
+    import importlib
+
+    importlib.reload(llm.default_plugins.openai_models)
+
+    model = llm.get_model("together-llama")
+    assert model.model_id == "together-llama"
+    assert model.model_name == "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+    assert model.api_base == "https://api.together.xyz/v1"
+    assert model.needs_key == "together"
+    # Alias should also work
+    assert llm.get_model("llama3").model_id == "together-llama"
+
+
 @pytest.mark.parametrize(
     "args,exit_code",
     (

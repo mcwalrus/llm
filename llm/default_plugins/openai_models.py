@@ -13,6 +13,7 @@ import llm
 from llm.parts import StreamEvent
 from llm.utils import (
     dicts_to_table_string,
+    interpolate_env_vars,
     remove_dict_none_values,
     logging_client,
     simplify_usage_dict,
@@ -317,6 +318,7 @@ def register_models(register):
         return
     with open(extra_path) as f:
         extra_models = yaml.safe_load(f)
+    extra_models = interpolate_env_vars(extra_models)
     for extra_model in extra_models:
         model_id = extra_model["model_id"]
         aliases = extra_model.get("aliases", [])
